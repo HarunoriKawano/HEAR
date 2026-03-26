@@ -6,9 +6,6 @@
 
 **Harunori Kawano · Takeshi Sasaki**
 
-*APSIPA ASC 2026*
-
-[![Paper](https://img.shields.io/badge/Paper-APSIPA%20ASC-blue?style=flat-square)](#)
 [![Python](https://img.shields.io/badge/Python-3.10+-3776AB?style=flat-square&logo=python&logoColor=white)](#)
 [![PyTorch](https://img.shields.io/badge/PyTorch-2.8-EE4C2C?style=flat-square&logo=pytorch&logoColor=white)](#)
 
