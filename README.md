@@ -27,7 +27,7 @@ Standard SSL-based audio models (wav2vec 2.0, HuBERT, BEATs, etc.) rely on large
 | 🎧 **Acoustic Model** | Extracts local acoustic features from fixed-length segments |
 | 🧠 **Task Model** | Integrates local features globally for downstream classification |
 
-This design achieves **15M parameters** and **9.47 GFLOPs** — ~16% the size of wav2vec 2.0 — while maintaining competitive accuracy.
+This design achieves **15M parameters** and **9.47 GFLOPs** while maintaining competitive accuracy.
 
 <div align="center">
 <img src="docs/hear_overview.png" width="300"/>
@@ -104,7 +104,7 @@ Training proceeds in three stages. Example step functions are in `src/train_step
 <img src="docs/pretrain_framework.png" width="700"/>
 </div>
 
-### Stage 1 — Acoustic Tokenizer Training
+### Stage 1: Acoustic Tokenizer Training
 
 Trains the `Tokenizer` to discretize mel-spectrogram frames into tokens.
 Uses a frozen SSAST teacher alongside reconstruction and diversity losses.
@@ -121,7 +121,7 @@ reconstruction_loss, distillation_loss, diversity_loss = framework(
 )
 ```
 
-### Stage 2 — Masked Audio Modeling (MAM)
+### Stage 2: Masked Audio Modeling (MAM)
 
 Pre-trains the `AcousticModel` with the frozen tokenizer as label generator.
 40% of frames are masked; the model predicts the original discrete tokens at masked positions.
@@ -135,7 +135,7 @@ framework = PretrainFramework(acoustic_model_config, tokenizer_config)
 loss = framework(inputs, input_lengths)
 ```
 
-### Stage 3 — Downstream Fine-tuning
+### Stage 3: Downstream Fine-tuning
 
 Combines the pre-trained `AcousticModel` with `SpectrogramMixture`, `TaskModel`, and a classification head.
 
