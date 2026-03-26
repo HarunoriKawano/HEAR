@@ -2,6 +2,7 @@ from pydantic import BaseModel
 
 
 class AcousticModelConfig(BaseModel):
+    """Configuration for the acoustic encoder."""
     hidden_size: int = 384
     intermediate_size: int = 1536
     num_attention_heads: int = 4
@@ -17,6 +18,7 @@ class AcousticModelConfig(BaseModel):
 
 
 class TokenizerConfig(BaseModel):
+    """Configuration for the neural tokenizer encoder."""
     hidden_size: int = 128
     intermediate_size: int = 512
     num_attention_heads: int = 4
@@ -32,6 +34,7 @@ class TokenizerConfig(BaseModel):
 
 
 class DecoderConfig(BaseModel):
+    """Configuration for the spectrogram reconstruction decoder."""
     hidden_size: int = 128
     intermediate_size: int = 512
     num_attention_heads: int = 4
@@ -46,6 +49,7 @@ class DecoderConfig(BaseModel):
 
 
 class TaskModelConfig(BaseModel):
+    """Configuration for the task-specific transformer."""
     hidden_size: int = 384
     intermediate_size: int = 1536
     num_transformer_layers: int = 1
@@ -55,17 +59,20 @@ class TaskModelConfig(BaseModel):
 
 
 class ClassificationDecoderConfig(BaseModel):
+    """Configuration for the classification head."""
     num_classes: int
     hidden_size: int = 384
     dropout_rate: float = 0.1
 
 
 class StaticConfig(BaseModel):
+    """Fixed spectrogram parameters shared across all modules."""
     n_fft: int = 1024
     sampling_rate: int = 16000
     win_seconds: float = 0.025
     hop_seconds: float = 0.01
     n_mel: int = 128
     eps: float = 1e-6
+
 
 STATIC_CONFIG = StaticConfig()

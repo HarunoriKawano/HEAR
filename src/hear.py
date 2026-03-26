@@ -10,7 +10,18 @@ from src.config import AcousticModelConfig, TaskModelConfig, ClassificationDecod
 
 
 class HEAR(nn.Module):
-    def __init__(self, acoustic_model_config: AcousticModelConfig, task_model_config: TaskModelConfig, decoder_config: ClassificationDecoderConfig):
+    """Full HEAR pipeline for audio classification.
+
+    Pipeline: waveform → Preprocessor → AcousticModel → SpectrogramMixture
+              → TaskModel → ClassificationDecoder → class logits.
+    """
+
+    def __init__(
+        self,
+        acoustic_model_config: AcousticModelConfig,
+        task_model_config: TaskModelConfig,
+        decoder_config: ClassificationDecoderConfig,
+    ):
         super().__init__()
         self.preprocessor = Preprocessor(acoustic_model_config)
         self.acoustic_model = AcousticModel(acoustic_model_config)
@@ -18,7 +29,18 @@ class HEAR(nn.Module):
         self.task_model = TaskModel(task_model_config)
         self.decoder = Decoder(decoder_config, task_model_config.hidden_size)
 
-    def forward(self, inputs, input_lengths):
+    def forward(
+        self,
+        inputs: torch.Tensor,
+        input_lengths: torch.LongTensor,
+    ) -> torch.Tensor:
+        """
+        Args:
+            inputs: Raw waveform of shape (batch, channels, samples).
+            input_lengths: Valid sample count per waveform, shape (batch,).
+        Returns:
+            out: Class logits of shape (batch, num_classes).
+        """
         log_mel_spectrogram, input_lengths, power_spectrum = self.preprocessor(inputs, input_lengths)
         hidden_states, input_lengths = self.acoustic_model(log_mel_spectrogram, input_lengths)
         hidden_states = self.spectrogram_mixture(hidden_states, power_spectrum)

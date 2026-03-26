@@ -9,6 +9,8 @@ from src.models.positional_encoder import RelativePositionEncoder
 
 
 class TransformerWithRelativePosition(nn.Module):
+    """Transformer encoder layer with pre-norm and relative position attention."""
+
     def __init__(
             self,
             hidden_size: int,
@@ -29,7 +31,14 @@ class TransformerWithRelativePosition(nn.Module):
             self,
             hidden_states: torch.Tensor,
             attention_mask: Optional[torch.Tensor] = None,
-    ):
+    ) -> torch.Tensor:
+        """
+        Args:
+            hidden_states: (batch, time, hidden_size)
+            attention_mask: (batch, time), True for valid positions.
+        Returns:
+            hidden_states: (batch, time, hidden_size)
+        """
         residual = hidden_states.clone()
         hidden_states = self.layer_norm1(hidden_states)
         hidden_states = self.self_attn(hidden_states, attention_mask)
@@ -42,7 +51,15 @@ class TransformerWithRelativePosition(nn.Module):
 
         return hidden_states
 
+
 class MultiHeadSelfAttentionWithRelativePosition(nn.Module):
+    """Multi-head self-attention using Shaw-style relative position encodings.
+
+    Attention scores are computed as the sum of content-based (QK^T) and
+    position-based (Q * R^T) terms, following the formulation in
+    "Self-Attention with Relative Position Representations" (Shaw et al., 2018).
+    """
+
     def __init__(
             self,
             hidden_size: int,
@@ -75,6 +92,13 @@ class MultiHeadSelfAttentionWithRelativePosition(nn.Module):
             hidden_states: torch.Tensor,
             attention_mask: Optional[torch.Tensor] = None,
     ) -> torch.Tensor:
+        """
+        Args:
+            hidden_states: (batch, time, hidden_size)
+            attention_mask: (batch, time), True for valid positions.
+        Returns:
+            out: (batch, time, hidden_size)
+        """
         batch_size, length, hidden_size = hidden_states.size()
 
         query = self.linear_q(hidden_states).view(batch_size, -1, self.num_heads, self.head_size)
@@ -117,6 +141,8 @@ class MultiHeadSelfAttentionWithRelativePosition(nn.Module):
 
 
 class FeedForward(nn.Module):
+    """Position-wise feed-forward network with SiLU activation and pre-norm."""
+
     def __init__(self, hidden_size: int, intermediate_size: int, dropout_probability: float):
         super().__init__()
         self.layer_norm = nn.LayerNorm(hidden_size)
@@ -127,7 +153,7 @@ class FeedForward(nn.Module):
         self.output_dense = nn.Linear(intermediate_size, hidden_size)
         self.output_dropout = nn.Dropout(p=dropout_probability)
 
-    def forward(self, hidden_states):
+    def forward(self, hidden_states: torch.Tensor) -> torch.Tensor:
         hidden_states = self.layer_norm(hidden_states)
         hidden_states = self.intermediate_dense(hidden_states)
         hidden_states = self.intermediate_act_fn(hidden_states)

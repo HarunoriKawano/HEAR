@@ -7,6 +7,8 @@ from src.utils import make_attention_mask
 
 
 class Decoder(nn.Module):
+    """Transformer decoder used during tokenizer training to reconstruct the spectrogram."""
+
     def __init__(self, config: DecoderConfig):
         super().__init__()
         self.layers = nn.ModuleList([TransformerWithRelativePosition(
@@ -15,7 +17,20 @@ class Decoder(nn.Module):
         ) for _ in range(config.num_transformer_layers)])
         self.out_layer = OutLayer(config)
 
-    def forward(self, hidden_states: torch.Tensor, input_lengths: torch.Tensor):
+    def forward(
+        self,
+        hidden_states: torch.Tensor,
+        input_lengths: torch.Tensor,
+    ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
+        """
+        Args:
+            hidden_states: Quantized vectors of shape (batch, time, hidden_size).
+            input_lengths: Valid frame count per sample, shape (batch,).
+        Returns:
+            predicted_spectrogram: Reconstructed mel spectrogram, shape (batch, time * 2, n_mel).
+            knowledge_prediction: Knowledge distillation target prediction, shape (batch, time, knowledge_hidden_size).
+            output_lengths: input_lengths scaled back up by the upsampling factor.
+        """
         attention_mask = make_attention_mask(hidden_states, input_lengths)
 
         for layer in self.layers:
@@ -30,6 +45,8 @@ class Decoder(nn.Module):
 
 
 class OutLayer(nn.Module):
+    """Projects transformer hidden states to a reconstructed spectrogram and a knowledge prediction."""
+
     def __init__(self, config: DecoderConfig):
         super().__init__()
         self.linear = nn.Linear(config.hidden_size, config.hidden_size)
@@ -38,7 +55,14 @@ class OutLayer(nn.Module):
         self.out_linear = nn.Linear(config.hidden_size, STATIC_CONFIG.n_mel * 2)
         self.out_linear2 = nn.Linear(config.hidden_size, config.knowledge_hidden_size)
 
-    def forward(self, hidden_states: torch.Tensor):
+    def forward(self, hidden_states: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
+        """
+        Args:
+            hidden_states: (batch, time, hidden_size)
+        Returns:
+            predicted_spectrogram: (batch, time * 2, n_mel)
+            knowledge_prediction: (batch, time, knowledge_hidden_size)
+        """
         hidden_states = self.linear(hidden_states)
         hidden_states = self.gelu(hidden_states)
         hidden_states = self.layer_norm(hidden_states)

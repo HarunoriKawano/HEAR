@@ -6,6 +6,8 @@ from src.config import AcousticModelConfig, TokenizerConfig, STATIC_CONFIG
 
 
 class Preprocessor(nn.Module):
+    """Converts raw waveforms to normalized log-mel spectrograms and power spectrograms."""
+
     def __init__(self, config: AcousticModelConfig | TokenizerConfig):
         super().__init__()
         self.sampling_rate = config.spectrogram_sampling_rate
@@ -26,7 +28,20 @@ class Preprocessor(nn.Module):
         self.eps = STATIC_CONFIG.eps
 
     @torch.no_grad()
-    def forward(self, inputs: torch.Tensor, input_lengths: torch.LongTensor) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
+    def forward(
+        self,
+        inputs: torch.Tensor,
+        input_lengths: torch.LongTensor,
+    ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
+        """
+        Args:
+            inputs: Raw waveform of shape (batch, channels, samples).
+            input_lengths: Valid sample count per waveform, shape (batch,).
+        Returns:
+            log_mel_spectrogram: Normalized log-mel spectrogram, shape (batch, n_mel, time).
+            input_lengths: Lengths converted to spectrogram frame counts.
+            power_spectrum: Normalized log power spectrogram, shape (batch, freq_bins, time).
+        """
         inputs = inputs - inputs.mean(dim=-1, keepdim=True)
         inputs = inputs.mean(dim=1, keepdim=True)
 
@@ -43,11 +58,13 @@ class Preprocessor(nn.Module):
 
         return normed_log_mel_spectrogram[:, 0], input_lengths, normed_log_power_spectrum[:, 0]
 
-    def instance_wise_norm(self, spectrogram):
+    def instance_wise_norm(self, spectrogram: torch.Tensor) -> torch.Tensor:
+        """Normalize each spectrogram independently to zero mean and unit variance."""
         mean = spectrogram.mean(dim=[-2, -1], keepdim=True)
         std = spectrogram.std(dim=[-2, -1], unbiased=False, keepdim=True)
         return (spectrogram - mean) / (std + self.eps)
 
-    def transform_input_lengths(self, input_lengths):
+    def transform_input_lengths(self, input_lengths: torch.Tensor) -> torch.Tensor:
+        """Convert sample counts to spectrogram frame counts using the hop length."""
         input_lengths = torch.floor((input_lengths - int(STATIC_CONFIG.hop_seconds * self.sampling_rate)) / int(STATIC_CONFIG.hop_seconds * self.sampling_rate) + 1) + 1
         return input_lengths
