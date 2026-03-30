@@ -194,5 +194,13 @@ src/
 ## 📄 Citation
 
 ```bibtex
-% To be added after publication
+@misc{kawano2026hear,
+    title={A Human-Inspired Decoupled Architecture for Efficient Audio Representation Learning},
+    author={Harunori Kawano and Takeshi Sasaki},
+    year={2026},
+    eprint={2603.26098},
+    archivePrefix={arXiv},
+    primaryClass={cs.SD},
+    url={https://arxiv.org/abs/2603.26098},
+}
 ```
